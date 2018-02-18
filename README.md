@@ -5,7 +5,6 @@ Daemon to monitor gpio via sysfs or uapi interface and send them over network.
 ## Requirements
 
 - libconfuse (https://github.com/martinh/libconfuse.git)
-- libpack (git@git.kemeke.ru:matrix/libpack.git)
 
 ## Explanatory note
 
