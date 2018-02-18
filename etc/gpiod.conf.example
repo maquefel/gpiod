@@ -1,0 +1,32 @@
+# (optional) to specific address, can be overriden by cmd args [default=127.0.0.1]
+listen = 127.0.0.1
+# (optional) listen on port, can be overriden by cmd args [default=1500]
+port = 1500
+# (optional) poll interval in msec, can be overriden by cmd args [default = 50]
+poll = 50
+
+# global facility to use sysfs or uapi [default = sysfs]
+facility = sysfs
+
+gpio {
+  # facility to use for this gpio sysfs or uapi [default = uapi] if not explicitly provided a global facility will be used
+  facility = uapi
+
+  # (optional) calculated system gpio offset [nodefault]
+  system = 256
+
+  # (optional) gpiochip name [nodefault]
+  gpiochip = gpiochip0
+
+  # (optional) local offset in gpiochip, can be negative [nodefault]
+  offset = 0
+
+  # (optional) local mapping [default=system]
+  local = 0
+
+  # label for passing via libpack i.e. WD0, WD1, ..., WDN
+  label = WD0
+
+  # rising, falling, both, polled [default=both]
+  edge = both
+}

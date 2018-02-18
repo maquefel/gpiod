@@ -1,0 +1,49 @@
+# (optional) to specific address, can be overriden by cmd args [default=127.0.0.1]
+listen = 127.0.0.1
+# (optional) listen on port, can be overriden by cmd args [default=1500]
+port = 1500
+# (optional) poll interval in msec, can be overriden by cmd args [default = 50]
+poll = 50
+
+# 256,512
+
+gpio {
+  facility = uapi
+  gpiochip = gpiochip0
+  local = 0
+  label = WD0
+  edge = both
+}
+
+gpio {
+  facility = uapi
+  gpiochip = gpiochip0
+  local = 1
+  label = WD1
+  edge = rising
+}
+
+gpio {
+  facility = uapi
+  gpiochip = gpiochip0
+  local = 2
+  label = WD2
+  edge = falling
+}
+
+gpio {
+  facility = uapi
+  gpiochip = gpiochip0
+  local = 3
+  label = WD3
+  edge = polled
+}
+
+gpio {
+  facility = uapi
+  gpiochip = gpiochip0
+  local = 4
+  label = WD4
+  edge = both
+  active_low = yes
+}
