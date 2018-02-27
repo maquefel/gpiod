@@ -14,6 +14,7 @@
 
 #include "pins/gpiod-sysfs.h"
 
+#include <sys/types.h>
 #include <syslog.h>
 #include <getopt.h>
 #include <stdio.h>
@@ -159,21 +160,38 @@ int main(int argc, char ** argv)
         }
     }
 
-    /** check if -k (kill) passed*/
-    if(kill_flag)
-    {
-        goto quit;
+    pid_t pid = read_pid_file(pidFile);
+
+    if(pid != 0) {
+        ret = kill(pid, 0);
+        if(ret == -1) {
+            fprintf(stderr, "%s : %s pid file exists, but the process doesn't!\n", PACKAGE_NAME, pidFile);
+
+            if(kill_flag || hup_flag)
+                goto quit;
+
+            unlink(pidFile);
+        } else {
+            /** check if -k (kill) passed*/
+            if(kill_flag)
+            {
+                kill(pid, SIGTERM);
+                goto quit;
+            }
+
+            /** check if -h (hup) passed*/
+            if(hup_flag)
+            {
+                kill(pid, SIGHUP);
+                goto quit;
+            }
+        }
     }
 
-    /** check if -h (hup) passed*/
-    if(hup_flag)
-    {
-        goto quit;
-    }
-
-    if(daemon_flag)
+    if(daemon_flag) {
         daemonize("/", 0);
-    else
+        pid = create_pid_file(pidFile);
+    } else
         openlog(PACKAGE_NAME, LOG_PERROR, LOG_DAEMON);
 
     /** setup signals */
@@ -187,7 +205,7 @@ int main(int argc, char ** argv)
 
     if (sigprocmask(SIG_BLOCK, &mask, NULL) == -1) {
         syslog(LOG_ERR, "Could not register signal handlers (%s).", strerror(errno));
-        goto quit;
+        goto unlink_pid;
     }
 
     /** get sigfd */
@@ -205,9 +223,10 @@ int main(int argc, char ** argv)
     ret = init_gpio_chips();
 
     ret = init_sysfs();
+
     if(ret == -1) {
         syslog(LOG_ERR, "Could not initialize sysfs (%s).", strerror(errno));
-        goto quit;
+        goto unlink_pid;
     }
 
     ret = init_gpio_pins();
@@ -221,6 +240,9 @@ int main(int argc, char ** argv)
     cleanup_sysfs();
 
     cleanup_gpio_chips();
+
+    unlink_pid:
+    unlink(pidFile);
 
     quit:
     return 0;
