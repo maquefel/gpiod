@@ -42,6 +42,10 @@ struct gpio_pin* alloc_gpio_pin(enum GPIOD_FACILITY facility)
             break;
     }
 
+    if(pin) {
+        memset(pin->name, 0, sizeof(pin->name));
+    }
+
     return pin;
 }
 
