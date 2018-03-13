@@ -2,6 +2,8 @@
 
 Daemon to monitor gpio via sysfs or uapi interface and send them over network.
 
+[![Build Status](https://semaphoreci.com/api/v1/maquefel/gpiod/branches/master/badge.svg)](https://semaphoreci.com/maquefel/gpiod)
+
 ## Requirements
 
 - libconfuse (https://github.com/martinh/libconfuse.git)
