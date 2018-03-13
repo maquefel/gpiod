@@ -226,7 +226,11 @@ int init_sysfs_pin(struct gpio_pin* pin)
         goto fail;
     }
 
-    ret = sprintf(buffer, "gpio%d", pin->system);
+    if(pin->name[0] != '\0') {
+        sprintf(buffer, "%s", pin->name);
+    } else {
+        sprintf(buffer, "gpio%d", pin->system);
+    }
 
     gpio_dir = openat(sfd_, buffer, O_RDONLY | __O_DIRECTORY);
     errsv = errno;

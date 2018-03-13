@@ -50,6 +50,7 @@ struct gpio_pin {
 
     int local;
 
+    char name[32]; ///> gpio line name, obligatorily if gpio line was named via device tree or platform driver, otherwise we can't uniquely identify exported line name
     char label[32];
 
     init_pin init;

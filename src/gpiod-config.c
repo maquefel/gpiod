@@ -49,6 +49,7 @@ cfg_opt_t gpio_pin_opts[] = {
     CFG_STR("gpiochip", 0, CFGF_NONE),
     CFG_INT("offset", -1, CFGF_NONE),
     CFG_INT("local", -1, CFGF_NONE),
+    CFG_STR("name", 0, CFGF_NODEFAULT),
     CFG_STR("label", 0, CFGF_NODEFAULT),
     CFG_INT_CB("edge", GPIOD_EDGE_MAX, CFGF_NONE, conf_parse_edge),
     CFG_BOOL("active_low", cfg_false, CFGF_NONE),
@@ -155,6 +156,10 @@ int loadConfig(const char* fileName) /** bool reload*/
 
         pin->offset = cfg_getint(gp, "offset");
         pin->local = cfg_getint(gp, "local");
+
+        char* name = cfg_getstr(gp, "name");
+        if(name)
+            strncpy(pin->name, name, sizeof(pin->name));
 
         char* label = cfg_getstr(gp, "label");
         if(label)
