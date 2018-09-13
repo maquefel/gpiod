@@ -38,11 +38,11 @@ int add_to_epoll(int epollfd, struct gpio_pin* pin)
 
     switch(pin->facility) {
         case GPIOD_FACILITY_SYSFS:
-            ew->event.events = EPOLLPRI;
+            ew->event.events = EPOLLPRI | EPOLLERR | EPOLLET;
             ew->type = SYSFS_PIN;
             break;
         case GPIOD_FACILITY_UAPI:
-            ew->event.events = EPOLLIN | EPOLLPRI;
+            ew->event.events = EPOLLIN | EPOLLET;
             ew->type = UAPI_PIN;
             break;
         default:
