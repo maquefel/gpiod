@@ -8,7 +8,10 @@
 #include "pins/gpiod-uapi.h"
 #endif
 
+#include "gpiod-hooktab.h"
+
 #include <stdlib.h>
+#include <string.h>
 
 const char* gpiod_facility_array[GPIOD_FACILITY_MAX] = {
     "sysfs",
@@ -44,6 +47,8 @@ struct gpio_pin* alloc_gpio_pin(enum GPIOD_FACILITY facility)
 
     if(pin) {
         memset(pin->name, 0, sizeof(pin->name));
+        INIT_LIST_HEAD(&(pin->list));
+        INIT_LIST_HEAD(&(pin->hook_list));
     }
 
     return pin;
@@ -90,6 +95,7 @@ int free_gpio_pins()
 
     list_for_each_safe(pos, tmp, &gp_list) {
         pin = list_entry(pos, struct gpio_pin, list);
+        freeTabs(pin);
         free_gpio_pin(pin);
     }
 
@@ -112,4 +118,22 @@ void free_gpio_pin(struct gpio_pin* pin)
         default:
             break;
     }
+}
+
+struct gpio_pin* find_pin_by_label(const char* label)
+{
+    struct list_head* pos = 0;
+    struct gpio_pin* pin = 0;
+    int ret = 0;
+
+    list_for_each(pos, &gp_list) {
+        pin = list_entry(pos, struct gpio_pin, list);
+
+        if(strncmp(label, pin->label, strlen(label)) == 0)
+            break;
+
+        pin = 0;
+    }
+
+    return pin;
 }

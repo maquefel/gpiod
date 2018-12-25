@@ -27,6 +27,10 @@
 #define GPIOD_CONFIG_FILE_PATH "/etc/" PACKAGE_NAME "/" PACKAGE_NAME ".conf"
 #endif
 
+#ifndef GPIOD_CRON_TABLE_DIRECTORY
+#define GPIOD_CRON_TABLE_DIRECTORY "/etc/" PACKAGE_NAME ".d/"
+#endif
+
 #define GPIOD_SYSFS
 
 #ifdef WITHOUT_GPIOD_SYSFS
