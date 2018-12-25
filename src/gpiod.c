@@ -46,6 +46,9 @@ static char *pidFile = GPIOD_PID_FILE;
 /** config file */
 char *configFile = GPIOD_CONFIG_FILE_PATH;
 
+/** gpcron tables location */
+char *gpcrontabDir = GPIOD_CRON_TABLE_DIRECTORY;
+
 static struct option long_options[] =
 {
     {"verbose",         no_argument,        &verbose_flag,      'V'},
@@ -56,6 +59,7 @@ static struct option long_options[] =
     {"hup",             no_argument,        &hup_flag,          'H'},
     {"pid",             required_argument,  0,                  'p'},
     {"config",          required_argument,  0,                  'c'},
+    {"tabdir",          required_argument,  0,                  'd'},
     {"help",            no_argument,        0,                  'h'},
     {0, 0, 0, 0}
 };
@@ -97,9 +101,12 @@ void PrintUsage(int argc, char *argv[]) {
         "-H, --hup                  send daemon signal to reload configuration\n" \
         "-p, --pid                  path to pid file[default=%s]\n" \
         "-c, --config=FILE          configuration file[default=%s]\n" \
+        "-d, --tabdir=DIR           tabs location directory[default=%s]\n" \
         "-h, --help                 prints this message\n",
         pidFile,
-        configFile);
+        configFile,
+        gpcrontabDir
+        );
     }
 }
 
@@ -122,7 +129,7 @@ int main(int argc, char ** argv)
     int errsv = 0;
     int ret = 0;
 
-    while((c = getopt_long(argc, argv, "Vvl:nkHp:c:h", long_options, &option_index)) != -1) {
+    while((c = getopt_long(argc, argv, "Vvl:nkHp:c:d:h", long_options, &option_index)) != -1) {
                 switch(c) {
             case 'v' :
                 printf("%s", daemon_version());
@@ -150,6 +157,10 @@ int main(int argc, char ** argv)
             case 'c':
                 configFile = optarg;
                 printf("Using config file: %s\n", configFile);
+                break;
+            case 'd':
+                gpcrontabDir = optarg;
+                printf("Reading tabs from: %s\n", gpcrontabDir);
                 break;
             case 'h':
                 PrintUsage(argc, argv);
@@ -220,13 +231,15 @@ int main(int argc, char ** argv)
     ret = loadConfig(configFile);
     errsv = errno;
 
+    ret = loadTabs(gpcrontabDir);
+
     ret = init_gpio_chips();
 
     ret = init_sysfs();
 
     if(ret == -1) {
         syslog(LOG_ERR, "Could not initialize sysfs (%s).", strerror(errno));
-        goto unlink_pid;
+        goto cleanup;
     }
 
     ret = init_gpio_pins();
@@ -235,6 +248,7 @@ int main(int argc, char ** argv)
 
     ret = cleanup_gpio_pins();
 
+    cleanup:
     free_gpio_pins();
 
     cleanup_sysfs();

@@ -4,6 +4,7 @@
 #include "gpiod.h"
 #include "list.h"
 
+#include "gpiod-hooktab.h"
 
 enum GPIOD_FACILITY {
     GPIOD_FACILITY_SYSFS = 0,
@@ -66,6 +67,7 @@ struct gpio_pin {
     enum GPIOD_ACTIVE_LOW active_low;
 
     struct list_head list;
+    struct list_head hook_list;
 };
 
 struct gpio_pin_sysfs {
@@ -95,5 +97,7 @@ int cleanup_gpio_pins();
 int free_gpio_pins();
 
 void free_gpio_pin(struct gpio_pin*);
+
+struct gpio_pin* find_pin_by_label(const char* /*label*/);
 
 #endif

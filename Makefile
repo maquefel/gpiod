@@ -28,8 +28,8 @@ else
 CFLAGS+=-DWITHOUT_GPIOD_UAPI=1
 endif
 
-gpiod: gpiod.o  gpiod-config.o  gpiod-server.o gpiod-event-loop.o gpiod-dispatch.o gpiod-dispatch-raw.o gpiod-exec.o gpiod-chip.o gpiod-chip-sysfs.o gpiod-pin.o gpiod-sysfs.o $(UAPI_OBJECTS)
-	$(CC) $(CFLAGS) -o gpiod gpiod.o gpiod-config.o gpiod-server.o gpiod-event-loop.o gpiod-dispatch.o gpiod-dispatch-raw.o gpiod-exec.o gpiod-chip.o gpiod-chip-sysfs.o gpiod-pin.o gpiod-sysfs.o $(UAPI_OBJECTS) $(LDFLAGS)
+gpiod: gpiod.o  gpiod-config.o  gpiod-server.o gpiod-event-loop.o gpiod-dispatch.o gpiod-dispatch-raw.o gpiod-hooktab.o gpiod-exec.o gpiod-chip.o gpiod-chip-sysfs.o gpiod-pin.o gpiod-sysfs.o $(UAPI_OBJECTS)
+	$(CC) $(CFLAGS) -o gpiod gpiod.o gpiod-config.o gpiod-server.o gpiod-event-loop.o gpiod-dispatch.o gpiod-dispatch-raw.o gpiod-hooktab.o gpiod-exec.o gpiod-chip.o gpiod-chip-sysfs.o gpiod-pin.o gpiod-sysfs.o $(UAPI_OBJECTS) $(LDFLAGS)
 
 gpiod.o: src/gpiod.c
 	$(CC) $(CFLAGS) -c src/gpiod.c $(INCLUDE)
@@ -48,6 +48,9 @@ gpiod-dispatch.o: src/gpiod-dispatch.c
 
 gpiod-dispatch-raw.o: src/dispatch/gpiod-dispatch-raw.c
 	$(CC) $(CFLAGS) -c src/dispatch/gpiod-dispatch-raw.c $(INCLUDE)
+
+gpiod-hooktab.o: src/gpiod-hooktab.c
+	$(CC) $(CFLAGS) -c src/gpiod-hooktab.c $(INCLUDE)
 
 gpiod-exec.o: src/gpiod-exec.c
 	$(CC) $(CFLAGS) -c src/gpiod-exec.c $(INCLUDE)

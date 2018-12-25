@@ -16,7 +16,6 @@ struct gpio_pin_uapi* to_pin_uapi(struct gpio_pin* pin)
 struct gpio_pin* alloc_uapi_gpio_pin()
 {
     struct gpio_pin_uapi* gp = malloc(sizeof(struct gpio_pin_uapi));
-    INIT_LIST_HEAD(&(gp->pin.list));
     gp->pin.facility = GPIOD_FACILITY_UAPI;
     gp->pin.init = uapi_init_pin;
     gp->pin.cleanup = uapi_cleanup_pin;

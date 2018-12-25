@@ -29,7 +29,6 @@ struct gpio_pin_sysfs* to_pin_sysfs(struct gpio_pin* pin)
 struct gpio_pin* alloc_sysfs_gpio_pin()
 {
     struct gpio_pin_sysfs* gp = malloc(sizeof(struct gpio_pin_sysfs));
-    INIT_LIST_HEAD(&(gp->pin.list));
     gp->pin.facility = GPIOD_FACILITY_SYSFS;
     gp->pin.init = init_sysfs_pin;
     gp->pin.cleanup = cleanup_sysfs_pin;
