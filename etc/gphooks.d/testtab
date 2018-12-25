@@ -1,4 +1,4 @@
-WD0     GPIOD_EDGE_RISING      /tmp/test.sh -n --version -v 23 -s test $# $% $&
-WD1     GPIOD_EDGE_FALLING     /tmp/test.sh $# $% $&
-WD2     GPIOD_EDGE_BOTH        /tmp/test.sh $# $% $&
-WD3     GPIOD_EDGE_RISING      /tmp/test.sh
+WD0     GPIOD_EDGE_RISING      /tmp/test.sh -n --version -v 23 -s test $@ $% $&
+WD1     GPIOD_EDGE_FALLING     /tmp/test.sh $@
+WD2     GPIOD_EDGE_BOTH        /tmp/test.sh $%
+WD3     GPIOD_EDGE_RISING      /tmp/test.sh $&

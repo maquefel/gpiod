@@ -25,6 +25,7 @@ struct gpiod_hook_args {
 struct gpiod_hook {
     char* path;                 ///> path to executable
     uint16_t flags;             ///> reaction flags GE_EDGE_RISING | GE_EDGE_FALLING | GE_ONESHOT
+    uint8_t arg_list_size;      ///> size of proccessed argument list
     struct list_head list;      ///>
     struct list_head arg_list;  ///> argument list
 };
