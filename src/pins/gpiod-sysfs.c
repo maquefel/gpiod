@@ -156,7 +156,7 @@ int sysfs_set_active_low(int fd, enum GPIOD_ACTIVE_LOW a_low)
     return -1;
 }
 
-char sysfs_changed_value(struct gpio_pin* pin)
+int8_t sysfs_changed_value(struct gpio_pin* pin)
 {
     char value = 0;
     int errsv = 0;
@@ -178,7 +178,7 @@ char sysfs_changed_value(struct gpio_pin* pin)
     return -1;
 }
 
-char sysfs_read_value(struct gpio_pin* pin)
+int8_t sysfs_read_value(struct gpio_pin* pin)
 {
     int ret = 0;
     int errsv = 0;

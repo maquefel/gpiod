@@ -37,7 +37,7 @@ struct gpio_pin* alloc_gpio_pin(enum GPIOD_FACILITY /*facility*/);
 typedef int (*init_pin)(struct gpio_pin*);
 typedef int (*cleanup_pin)(struct gpio_pin*);
 
-typedef char (*changed_pin)(struct gpio_pin*);
+typedef int8_t (*changed_pin)(struct gpio_pin*);
 typedef int (*value_pin)(struct gpio_pin*);
 
 // system or gpiochip + offset; system is translated to gpiochip + offset; gpiochip + offset is translated to system

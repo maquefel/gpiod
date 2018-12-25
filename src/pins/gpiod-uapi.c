@@ -100,7 +100,7 @@ int uapi_cleanup_pin(struct gpio_pin* pin)
     return 0;
 }
 
-char uapi_read_value(struct gpio_pin* pin)
+int8_t uapi_read_value(struct gpio_pin* pin)
 {
     int ret = 0;
     int errsv = 0;
@@ -121,7 +121,7 @@ char uapi_read_value(struct gpio_pin* pin)
     return -1;
 }
 
-char uapi_changed_value(struct gpio_pin* pin)
+int8_t uapi_changed_value(struct gpio_pin* pin)
 {
     int ret = 0;
     char value = 0;
