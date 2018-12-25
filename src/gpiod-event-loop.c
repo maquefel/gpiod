@@ -198,6 +198,7 @@ int loop()
                     gettimeofday(&ts, NULL);
 
                     ret = dispatch(ts, pin->local, pin->value_);
+                    ret = dispatch_hooks(pin);
                 }
             }
 
@@ -261,6 +262,7 @@ int loop()
                     syslog(LOG_DEBUG, "PIN event fired %s:%d = %d", pin->label, pin->system, pin->value_);
 
                     ret = dispatch(ts, pin->local, pin->value_);
+                    ret = dispatch_hooks(pin);
                 break;
                 case SIGNAL_FD: {
                     syslog(LOG_DEBUG, "SIGNAL_FD event fired");

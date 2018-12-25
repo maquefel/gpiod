@@ -6,6 +6,8 @@
 #include <sys/time.h>
 
 int dispatch(struct timeval /*ts*/, uint32_t /*chan*/, uint8_t /*value*/);
+struct gpio_pin;
+int dispatch_hooks(struct gpio_pin* /*pin*/);
 int splice_to(int /*from_fd*/, int /*to_fd*/, ssize_t /*num*/);
 int splice_to_null(int /*from_fd*/, ssize_t /*num*/);
 

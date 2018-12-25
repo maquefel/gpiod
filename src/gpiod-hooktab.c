@@ -147,9 +147,10 @@ int loadTab(int dirfd, struct dirent* dentry)
 
         /** allocate a hook here */
         struct gpiod_hook* hook = malloc(sizeof(struct gpiod_hook));
-        hook->path = strdup(tmp);;
+        hook->path = strdup(tmp);
         INIT_LIST_HEAD(&(hook->list));
         INIT_LIST_HEAD(&(hook->arg_list));
+        hook->arg_list_size = 0;
 
         fprintf(stderr, "path : %s\n", hook->path);
 
@@ -185,15 +186,13 @@ int loadTab(int dirfd, struct dirent* dentry)
                     goto list_add;
 
                 }
-
-                free(arg);
-                continue;
             }
 
             arg->c_arg = strdup(tmp);
 
             list_add:
             list_add_tail(&(arg->list), &(hook->arg_list));
+            hook->arg_list_size++;
         }
 
         /** add to pin */
