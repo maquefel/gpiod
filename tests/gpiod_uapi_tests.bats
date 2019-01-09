@@ -39,9 +39,27 @@ setup() {
     echo $result
     run `echo $result | grep 1\;0`
     [ "$output" = "" ]
+
+    echo 1 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/1
+    result=$(timeout 1 cat <&100) || true
+    echo $result
+    run `echo $result | grep 1\;1`
+    [ "$output" != "" ]
 }
 
 @test "uapi falling interrupt test" {
+    echo 1 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/2
+    result=$(timeout 1 cat <&100) || true
+    echo $result
+    run `echo $result | grep 2\;1`
+    [ "$output" = "" ]
+
+    echo 0 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/2
+    result=$(timeout 1 cat <&100) || true
+    echo $result
+    run `echo $result | grep 2\;0`
+    [ "$output" != "" ]
+
     echo 1 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/2
     result=$(timeout 1 cat <&100) || true
     echo $result
