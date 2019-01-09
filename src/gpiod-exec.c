@@ -28,9 +28,9 @@ int exec_start(const char* exec_file, char *const argv[], char *const envp[])
             goto fail;
         case 0 :
             /** child proccess */
-            close(stdin);
-            close(stdout);
-            close(stderr);
+            close(STDIN_FILENO);
+            close(STDOUT_FILENO);
+            close(STDERR_FILENO);
 
             ret = execvpe(exec_file, argv, envp);
             errsv = errno;
