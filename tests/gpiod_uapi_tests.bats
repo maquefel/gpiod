@@ -16,11 +16,13 @@ setup() {
 @test "uapi both interrupt test" {
     echo 1 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/0
     result=$(timeout 1 cat <&100) || true
+    echo $result
     run `echo $result | grep 0\;1`
     [ "$output" != "" ]
 
     echo 0 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/0
     result=$(timeout 1 cat <&100) || true
+    echo $result
     run `echo $result | grep 0\;0`
     [ "$output" != "" ]
 }
@@ -56,11 +58,13 @@ setup() {
 @test "uapi both polled test" {
     echo 1 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/3
     result=$(timeout 1 cat <&100) || true
+    echo $result
     run `echo $result | grep 3\;1`
     [ "$output" != "" ]
 
     echo 0 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/3
     result=$(timeout 1 cat <&100) || true
+    echo $result
     run `echo $result | grep 3\;0`
     [ "$output" != "" ]
 }
