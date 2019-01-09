@@ -17,7 +17,7 @@
 #include "gpiod-hooktab.h"
 #include "gpiod-exec.h"
 
-int dispatch(struct timeval ts, uint32_t chan, uint8_t value)
+int dispatch(struct timespec ts, uint32_t chan, uint8_t value)
 {
     char * package = 0;
     size_t len = 0;

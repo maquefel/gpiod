@@ -183,7 +183,10 @@ int loop()
         int timeout = 50; // [msec]
         struct timeval t1 = {0}; // [sec], [us]
         struct timeval t2 = {0};
-        struct timeval ts = {0};
+        struct timespec ts = {0};
+
+        enum GPIOD_EDGE event = GPIOD_EDGE_MAX;
+
         gettimeofday(&t1, NULL);
         int nfds = epoll_wait(epollfd, events, epoll_events, timeout); // timeout in milliseconds
         errsv = errno;
@@ -192,11 +195,9 @@ int loop()
         if (nfds == 0) {
             list_for_each(pos, &p_list) {
                 pin = list_entry(pos, struct gpio_pin, list);
-                char changed = pin->changed(pin);
+                int8_t changed = pin->changed(pin, &ts, (int8_t*)&event);
                 if(changed) {
                     debug_printf_n("pin[%d] value changed : %u", pin->system, pin->value_);
-                    gettimeofday(&ts, NULL);
-
                     ret = dispatch(ts, pin->local, pin->value_);
                     ret = dispatch_hooks(pin);
                 }
@@ -248,13 +249,12 @@ int loop()
                         splice_to_null(client_->fd, len);
                 } break;
                 case SYSFS_PIN:
-                    gettimeofday(&ts, NULL);
                 case UAPI_PIN:
                     /** add debounce check */
                     pin = w->pin;
 
                     /** @todo rework changed interface to primary support uapi */
-                    if(!pin->changed(pin) && pin->edge == GPIOD_EDGE_BOTH) {
+                    if(!pin->changed(pin, &ts, (int8_t*)&event) && pin->edge == GPIOD_EDGE_BOTH) {
                         syslog(LOG_DEBUG, "spurious interrupt on %s:%d", pin->label, pin->system);
                         continue;
                     }
@@ -282,6 +282,9 @@ int loop()
                             break;
                         case SIGHUP:
                             hup_flag = 1;
+                            break;
+                        case SIGCHLD:
+                            syslog(LOG_DEBUG, "SIGCHLD signal recieved - shutting down, updating status for child...");
                             break;
                         default:
                             break;

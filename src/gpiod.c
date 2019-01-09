@@ -213,6 +213,7 @@ int main(int argc, char ** argv)
     sigaddset(&mask, SIGQUIT);
     sigaddset(&mask, SIGHUP);
     sigaddset(&mask, SIGPIPE);
+    sigaddset(&mask, SIGCHLD);
 
     if (sigprocmask(SIG_BLOCK, &mask, NULL) == -1) {
         syslog(LOG_ERR, "Could not register signal handlers (%s).", strerror(errno));

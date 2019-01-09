@@ -12,6 +12,8 @@ struct gpio_pin* alloc_sysfs_gpio_pin();
 int init_sysfs_pin(struct gpio_pin* /*pin*/);
 int cleanup_sysfs_pin(struct gpio_pin* /*pin*/);
 int8_t sysfs_read_value(struct gpio_pin* /*pin*/);
-int8_t sysfs_changed_value(struct gpio_pin* /*pin*/);
+
+struct timespec;
+int8_t sysfs_changed_value(struct gpio_pin*, struct timespec*, int8_t*);
 
 #endif

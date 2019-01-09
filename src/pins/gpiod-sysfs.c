@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 static const char* sysfs = "/sys/class/gpio/";
 
@@ -156,7 +157,7 @@ int sysfs_set_active_low(int fd, enum GPIOD_ACTIVE_LOW a_low)
     return -1;
 }
 
-int8_t sysfs_changed_value(struct gpio_pin* pin)
+int8_t sysfs_changed_value(struct gpio_pin* pin, struct timespec* time, int8_t* event)
 {
     char value = 0;
     int errsv = 0;
@@ -169,6 +170,13 @@ int8_t sysfs_changed_value(struct gpio_pin* pin)
 
     if(value == pin->value_)
         return 0;
+
+    if(value == 1)
+        *event = GPIOD_EDGE_RISING;
+    else
+        *event = GPIOD_EDGE_FALLING;
+
+    clock_gettime(CLOCK_REALTIME, time);
 
     pin->value_ = value;
     return 1;

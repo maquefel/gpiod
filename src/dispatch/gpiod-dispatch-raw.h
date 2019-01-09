@@ -5,6 +5,6 @@
 #include <stdint.h>
 #include <sys/time.h>
 
-size_t dispatch_raw_pack(char** /*data*/, struct timeval /*ts*/, uint8_t /*chan*/, uint8_t /*value*/);
+size_t dispatch_raw_pack(char** /*data*/, struct timespec /*ts*/, uint8_t /*chan*/, uint8_t /*value*/);
 
 #endif

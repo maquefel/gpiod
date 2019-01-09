@@ -7,6 +7,7 @@
 #include <sys/ioctl.h>
 #include <linux/gpio.h>
 #include <syslog.h>
+#include <time.h>
 
 struct gpio_pin_uapi* to_pin_uapi(struct gpio_pin* pin)
 {
@@ -121,21 +122,41 @@ int8_t uapi_read_value(struct gpio_pin* pin)
     return -1;
 }
 
-int8_t uapi_changed_value(struct gpio_pin* pin)
+int8_t uapi_changed_value(struct gpio_pin* pin, struct timespec* time, int8_t* event)
 {
     int ret = 0;
     char value = 0;
     int errsv = 0;
 
-    struct gpioevent_data event;
+    struct gpioevent_data ev;
     struct gpio_pin_uapi* upin = to_pin_uapi(pin);
 
     if(pin->edge != GPIOD_EDGE_POLLED) {
-        ret = read(upin->fd, &event, sizeof(event));
+        ret = read(upin->fd, &ev, sizeof(ev));
         errsv = errno;
 
         if(ret == -1)
             goto fail;
+
+        switch(ev.id) {
+            case GPIOEVENT_EVENT_RISING_EDGE:
+                pin->value_ = 1;
+                *event = GPIOD_EDGE_RISING;
+                break;
+            case GPIOEVENT_EVENT_FALLING_EDGE:
+                pin->value_ = 0;
+                *event = GPIOD_EDGE_FALLING;
+                break;
+            default:
+                errsv = ENOENT;
+                goto fail;
+
+        }
+
+        time->tv_sec = ev.timestamp/(uint64_t)1e9;
+        time->tv_nsec = ev.timestamp%(uint64_t)1e9;
+
+        return 1;
     }
 
     value = uapi_read_value(pin);
@@ -147,7 +168,15 @@ int8_t uapi_changed_value(struct gpio_pin* pin)
     if(value == pin->value_)
         return 0;
 
+    if(value == 1)
+        *event = GPIOD_EDGE_RISING;
+    else
+        *event = GPIOD_EDGE_FALLING;
+
+    clock_gettime(CLOCK_REALTIME, time);
+
     pin->value_ = value;
+
     return 1;
 
     fail:

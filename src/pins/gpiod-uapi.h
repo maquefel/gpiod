@@ -8,7 +8,9 @@ struct gpio_pin;
 int uapi_init_pin(struct gpio_pin* /*pin*/);
 int uapi_cleanup_pin(struct gpio_pin* /*pin*/);
 
-int8_t uapi_changed_value(struct gpio_pin* /*pin*/);
+struct timespec;
+
+int8_t uapi_changed_value(struct gpio_pin*, struct timespec*, int8_t*);
 int8_t uapi_read_value(struct gpio_pin* /*pin*/);
 
 #endif

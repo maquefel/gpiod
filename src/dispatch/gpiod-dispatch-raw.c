@@ -9,9 +9,9 @@ static const char* package_pattern = "%sDI;%u.%06u;%02u;%u%s";
 
 char buffer[256];
 
-size_t dispatch_raw_pack(char** data, struct timeval ts, uint8_t chan, uint8_t value)
+size_t dispatch_raw_pack(char** data, struct timespec ts, uint8_t chan, uint8_t value)
 {
-    size_t size = snprintf(buffer, sizeof(buffer), package_pattern, start_symbols, ts.tv_sec, ts.tv_usec, chan, value, stop_symbols);
+    size_t size = snprintf(buffer, sizeof(buffer), package_pattern, start_symbols, ts.tv_sec, ts.tv_nsec, chan, value, stop_symbols);
     *data = buffer;
     return size;
 }
