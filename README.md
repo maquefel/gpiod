@@ -1,6 +1,7 @@
 # LINUX GPIO DAEMON (GPIOD)
 
-Daemon to monitor gpio via sysfs or uapi interface and send them over network.
+Daemon to monitor gpio via sysfs or uapi interface and send them over network or
+execute user defined hooks with desired arguments.
 
 [![Build Status](https://semaphoreci.com/api/v1/maquefel/gpiod/branches/master/badge.svg)](https://semaphoreci.com/maquefel/gpiod)
 
@@ -12,11 +13,14 @@ Daemon to monitor gpio via sysfs or uapi interface and send them over network.
 
 ### Concept
 
-**gpiod** supports both uapi and sysfs interface and currently (although this is not recommended) it can be used both at the same time. Triggers can be set to rising edge, falling edge, both or be polled via configured interval.
+**gpiod** supports both uapi and sysfs interface and currently (although this
+is not recommended) it can be used both at the same time. Triggers can be set to
+rising edge, falling edge, both or be polled via configured interval.
 
 On being triggered an event is dispatched to all connected clients.
 
-**gpiod** fully acts as a daemon, through it needs privileges to be launched as gpio's are not considered user-space.
+**gpiod** fully acts as a daemon, through it needs privileges to be launched
+as gpio's are not considered user-space.
 
 ## Installation
 
@@ -49,13 +53,18 @@ $ make DESTDIR= prefix= install
 ```
 Both **DESTDIR** and **prefix** should be used when installing to an extern rootfs.
 
+By default /etc/gpio.d and /etc/gpiod.conf are not created - you can find different
+examples in etc directory of repository.
+
 ### Tests
 
-Some sanity tests are provided in tests. bats (https://github.com/sstephenson/bats) is additionally required to perform tests.
+Some sanity tests are provided in tests. bats (https://github.com/sstephenson/bats)
+is additionally required to perform tests.
 
 ## Running
 
 Following options can be passed:
+
 ```
 -v, --version              prints version and exits
 -V, --verbose              be more verbose
@@ -65,6 +74,7 @@ Following options can be passed:
 -H, --hup                  send daemon signal to reload configuration
 -p, --pid                  path to pid file[default=/var/run/gpiod.pid]
 -c, --config=FILE          configuration file[default=/etc/gpiod/gpiod.conf]
+-d, --tabdir=DIR           tabs location directory[default=/etc/gpiod.d/]
 -h, --help                 prints this message
 ```
 
@@ -102,5 +112,26 @@ gpio {
 }
 ```
 
+### Hook tabs
+
+**gpiod** supports launching user defined executables based on configured trigger
+files placed under **/etc/gpio.d** or specified by **--tabdir**,**-d** argument.
+
+Tab files should be in form of :
+
+```
+[LABEL] [MODIFIERS]         [PATH]       [ARGS]
+WD0     EDGE_RISING         /tmp/test.sh -n --version -v 23 -s test $@ $% $&
+```
+
+Where **LABEL** is pin label defined in config file i.e. **label =**, **MODIFIERS**
+one of **EDGE_RISING**, **EDGE_FALLING**, **EDGE_BOTH ** and (optional) **NO_LOOP**,
+**ONESHOT** flags.
+
+**NO_LOOP** prevents launching before previous launch has finished and **ONESHOT**
+to launch hook only once per daemon lifetime.
+
+see etc/gpio.d/testtab example.
+
 ## Copyright
-© 2018 Nikita Shubin
+© 2019 Nikita Shubin
