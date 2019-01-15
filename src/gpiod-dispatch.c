@@ -17,6 +17,16 @@
 #include "gpiod-hooktab.h"
 #include "gpiod-exec.h"
 
+#include "uthash.h"
+
+struct pid_list_t {
+    pid_t pid;
+    struct gpiod_hook *hook;
+    UT_hash_handle hh;
+};
+
+struct pid_list_t* pid_list = 0;
+
 int dispatch(struct timespec ts, uint32_t chan, uint8_t value)
 {
     char * package = 0;
@@ -44,10 +54,19 @@ int dispatch(struct timespec ts, uint32_t chan, uint8_t value)
     return -1;
 }
 
-char* test_text_event = "TEST";
-char* test_num_event = "111";
+char* text_event[] = {
+    "RISE",
+    "FALL",
+    0
+};
 
-int dispatch_hooks(struct gpio_pin* pin)
+char* num_event[] = {
+    "1",
+    "0",
+    0
+};
+
+int dispatch_hooks(struct gpio_pin* pin, int8_t event)
 {
     int errsv = 0;
 
@@ -59,7 +78,28 @@ int dispatch_hooks(struct gpio_pin* pin)
 
     list_for_each(pos, &(pin->hook_list)) {
         hook = list_entry(pos, struct gpiod_hook, list);
-        /** @todo check last event */
+
+        /** check if no loop and hook already in progress */
+        if(!!(hook->flags & HOOKTAB_MOD_NO_LOOP) && hook->spawned != -1)
+            continue;
+
+        /** check if oneshot already fired */
+        if(!!(hook->flags & HOOKTAB_MOD_ONESHOT) && hook->fired > 0)
+            continue;
+
+        /** check if event is applicable */
+        switch(event) {
+            case GPIOD_EDGE_RISING:
+                if(!!(hook->flags & HOOKTAB_MOD_RISE))
+                    break;
+                continue;
+            case GPIOD_EDGE_FALLING:
+                if(!!(hook->flags & HOOKTAB_MOD_FALL))
+                    break;
+            default:
+                continue;
+        }
+
         /** form  args list */
         char *argv[hook->arg_list_size + 1];
         char *envp[] = {0};
@@ -84,10 +124,10 @@ int dispatch_hooks(struct gpio_pin* pin)
                     argv[i++] = pin->label;
                     break;
                 case HOOKTAB_ARG_EVENT_TEXT:
-                    argv[i++] = test_text_event;
+                    argv[i++] = text_event[event];
                     break;
                 case HOOKTAB_ARG_EVENT_NUM:
-                    argv[i++] = test_num_event;
+                    argv[i++] = num_event[event];
                     break;
                 default:
                     break;
@@ -101,13 +141,47 @@ int dispatch_hooks(struct gpio_pin* pin)
         // -1 - path not exists
         if(ret == -1) {
             syslog(LOG_ERR, "failed launching hook %s with %d : %s", hook->path, errsv, strerror(errsv));
+            continue;
         }
 
         // 0 - we have forked and execvpe failed so should exit
         if(ret == 0) {
             exit(EXIT_FAILURE);
         }
+
+        hook->spawned = ret;
+        hook->fired = 1;
+
+        struct pid_list_t* pid = (struct pid_list_t*)malloc(sizeof(struct pid_list_t));
+        pid->hook = hook;
+        pid->pid = ret;
+        HASH_ADD(hh, pid_list, pid, sizeof(pid_t), pid);
+
+        syslog(LOG_NOTICE, "spawned child %s [%d]", hook->path, hook->spawned);
     }
+
+    return 0;
+}
+
+int clear_hooks()
+{
+
+}
+
+int hook_clear_spawned(pid_t pid)
+{
+    struct pid_list_t* pid_ = 0;
+    HASH_FIND(hh, pid_list, &pid, sizeof(pid_t), pid_);
+
+    if(pid_ == 0)
+        return -1;
+
+    /** find assosiated hook if any */
+    struct gpiod_hook* hook = pid_->hook;
+    hook->spawned = -1;
+
+    HASH_DEL(pid_list, pid_);
+    free(pid_);
 
     return 0;
 }

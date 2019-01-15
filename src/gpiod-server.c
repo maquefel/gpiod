@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include "gpiod-server.h"
 
 #include <sys/socket.h>
@@ -22,7 +23,7 @@ int init_socket(uint32_t ipaddr, int portno)
     int errsv = 0;
 
     /* First call to socket() function */
-    int sockfd = socket(PF_INET, SOCK_STREAM, 0);
+    int sockfd = socket(PF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0);
     errsv = errno;
     if (ret == -1)
     {
@@ -89,7 +90,7 @@ struct tcp_client* accept_tcp_client(int fd)
 
     struct tcp_client* client = 0;
 
-    newsockfd = accept(fd, (struct sockaddr *) &cli_addr, &clilen);
+    newsockfd = accept4(fd, (struct sockaddr *) &cli_addr, &clilen, SOCK_CLOEXEC);
     errsv = errno;
     // EAGAIN EWOULDBLOCK
     if (newsockfd < 0)

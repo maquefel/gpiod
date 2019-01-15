@@ -47,7 +47,7 @@ static char *pidFile = GPIOD_PID_FILE;
 char *configFile = GPIOD_CONFIG_FILE_PATH;
 
 /** gpcron tables location */
-char *gpcrontabDir = GPIOD_CRON_TABLE_DIRECTORY;
+char *crontabDir = GPIOD_CRON_TABLE_DIRECTORY;
 
 static struct option long_options[] =
 {
@@ -105,7 +105,7 @@ void PrintUsage(int argc, char *argv[]) {
         "-h, --help                 prints this message\n",
         pidFile,
         configFile,
-        gpcrontabDir
+        crontabDir
         );
     }
 }
@@ -159,8 +159,8 @@ int main(int argc, char ** argv)
                 printf("Using config file: %s\n", configFile);
                 break;
             case 'd':
-                gpcrontabDir = optarg;
-                printf("Reading tabs from: %s\n", gpcrontabDir);
+                crontabDir = optarg;
+                printf("Reading tabs from: %s\n", crontabDir);
                 break;
             case 'h':
                 PrintUsage(argc, argv);
@@ -222,7 +222,7 @@ int main(int argc, char ** argv)
 
     /** get sigfd */
     extern int sigfd;
-    sigfd = signalfd(-1, &mask, 0);
+    sigfd = signalfd(-1, &mask, SFD_CLOEXEC);
 
     /** set log level */
     setlogmask(LOG_UPTO(log_level));
@@ -232,7 +232,7 @@ int main(int argc, char ** argv)
     ret = loadConfig(configFile);
     errsv = errno;
 
-    ret = loadTabs(gpcrontabDir);
+    ret = loadTabs(crontabDir);
 
     ret = init_gpio_chips();
 

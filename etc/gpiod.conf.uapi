@@ -47,3 +47,27 @@ gpio {
   edge = both
   active_low = yes
 }
+
+gpio {
+  facility = uapi
+  gpiochip = gpiochip0
+  local = 5
+  label = WD5
+  edge = both
+}
+
+gpio {
+  facility = uapi
+  gpiochip = gpiochip0
+  local = 6
+  label = WD6
+  edge = both
+}
+
+gpio {
+  facility = uapi
+  gpiochip = gpiochip0
+  local = 7
+  label = WD7
+  edge = both
+}

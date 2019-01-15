@@ -16,7 +16,7 @@ struct gpio_chip* uapi_init_gpio_chip(int fd, const char* name)
     struct gpio_chip* chip = 0;
     struct gpiochip_info chip_info = {0};
 
-    int chip_fd = openat(fd, name, O_RDONLY);
+    int chip_fd = openat(fd, name, O_RDONLY | O_CLOEXEC);
     errsv = errno;
 
     if(chip_fd < 0)

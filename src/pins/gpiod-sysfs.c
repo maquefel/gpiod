@@ -63,14 +63,14 @@ int init_sysfs()
         goto fail;
     }
 
-    efd_ = openat(sfd_, "export", O_WRONLY);
+    efd_ = openat(sfd_, "export", O_WRONLY | O_CLOEXEC);
     errsv = errno;
     if(efd_ == -1) {
         syslog(LOG_CRIT, "failed opening /sys/class/gpio/export with [%d] : %s", errsv, strerror(errsv));
         goto fail;
     }
 
-    ufd_ = openat(sfd_, "unexport", O_WRONLY);
+    ufd_ = openat(sfd_, "unexport", O_WRONLY | O_CLOEXEC);
     errsv = errno;
     if(ufd_ == -1) {
         syslog(LOG_CRIT, "failed opening /sys/class/gpio/unexport with [%d] : %s", errsv, strerror(errsv));
@@ -239,7 +239,7 @@ int init_sysfs_pin(struct gpio_pin* pin)
         sprintf(buffer, "gpio%d", pin->system);
     }
 
-    gpio_dir = openat(sfd_, buffer, O_RDONLY | __O_DIRECTORY);
+    gpio_dir = openat(sfd_, buffer, O_RDONLY | __O_DIRECTORY | O_CLOEXEC);
     errsv = errno;
 
     if(gpio_dir == -1) {
@@ -247,7 +247,7 @@ int init_sysfs_pin(struct gpio_pin* pin)
         goto fail;
     }
 
-    ret = spin->dir_fd = openat(gpio_dir, "direction", O_WRONLY);
+    ret = spin->dir_fd = openat(gpio_dir, "direction", O_WRONLY | O_CLOEXEC);
     errsv = errno;
 
     if(ret > 0) {
@@ -261,7 +261,7 @@ int init_sysfs_pin(struct gpio_pin* pin)
         goto fail;
     }
 
-    ret = spin->edge_fd = openat(gpio_dir, "edge", O_WRONLY);
+    ret = spin->edge_fd = openat(gpio_dir, "edge", O_WRONLY | O_CLOEXEC);
     errsv = errno;
 
     if(ret > 0) {
@@ -274,7 +274,7 @@ int init_sysfs_pin(struct gpio_pin* pin)
     }
 
     if(pin->active_low == GPIOD_ACTIVE_YES) {
-        ret = spin->active_fd = openat(gpio_dir, "active_low", O_WRONLY);
+        ret = spin->active_fd = openat(gpio_dir, "active_low", O_WRONLY | O_CLOEXEC);
         errsv = errno;
         if(ret > 0) {
             ret = sysfs_set_active_low(ret, GPIOD_ACTIVE_YES);
@@ -286,7 +286,7 @@ int init_sysfs_pin(struct gpio_pin* pin)
         }
     }
 
-    ret = spin->value_fd = openat(gpio_dir, "value", O_RDONLY);
+    ret = spin->value_fd = openat(gpio_dir, "value", O_RDONLY | O_CLOEXEC);
     errsv = errno;
 
     if(ret < 0) {

@@ -8,13 +8,17 @@
 #include <stdio.h>
 #include <syslog.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "gpiod-pin.h"
 
-const char* gpiod_event_array[GPIOD_EDGE_POLLED] = {
-    "GPIOD_EDGE_RISING",
-    "GPIOD_EDGE_FALLING",
-    "GPIOD_EDGE_BOTH",
+const char* gpiod_hook_modifies[] = {
+    "EDGE_RISING",
+    "EDGE_FALLING",
+    "EDGE_BOTH",
+    "NO_LOOP",
+    "ONESHOT",
+    NULL
 };
 
 const char* gpiod_special_args_array[HOOKTAB_ARG_MAX] = {
@@ -23,14 +27,16 @@ const char* gpiod_special_args_array[HOOKTAB_ARG_MAX] = {
     "$&"
 };
 
-enum GPIOD_EDGE tab_parse_event(const char* value)
+enum GPIOD_HOOKTAB_MOD tab_parse_mod(const char* value)
 {
-    int i;
-    for(i = 0; i < GPIOD_EDGE_POLLED; i++)
-        if(strncmp(value, gpiod_event_array[i], strlen(value)) == 0)
-            return (enum GPIOD_EDGE)i;
+    int i = 0;
 
-    return GPIOD_EDGE_MAX;
+    do {
+        if(strncmp(value, gpiod_hook_modifies[i], strlen(value)) == 0)
+            return (enum GPIOD_HOOKTAB_MOD)(i + 1);
+    } while(gpiod_hook_modifies[++i] != NULL);
+
+    return HOOKTAB_MOD_MAX;
 }
 
 enum GPIOD_HOOKTAB_ARGS tab_parse_args(const char* value)
@@ -78,9 +84,6 @@ int loadTab(int dirfd, struct dirent* dentry)
     int errsv = 0;
     int ret = 0;
 
-    // label   event               exec path            args
-    // WD0     GE_EDGE_RISING      /tmp/test.sh         $# $% $&
-    // eat spaces and tabs
     /** open file */
     int fd = openat(dirfd, dentry->d_name, O_RDONLY);
     errsv = errno;
@@ -102,6 +105,7 @@ int loadTab(int dirfd, struct dirent* dentry)
         char* tmp1 = 0;
         char* tmp2 = 0;
         uint8_t len = 0;
+        uint16_t flags = 0;
 
         line_num++;
 
@@ -121,22 +125,45 @@ int loadTab(int dirfd, struct dirent* dentry)
 
         fprintf(stderr, "label : %s\n", tmp);
 
-        /** get event */
-        tmp1 = eat_space(tmp2);
-        tmp2 = next_space(tmp1);
-        len = tmp2 - tmp1;
-        tmp = strncpy(buffer, tmp1, len);
-        tmp[len] = '\0';
+        /** get modifiers */
+        char* coma = 0;
+        do {
+            tmp1 = eat_space(tmp2);
+            tmp2 = next_space(tmp1);
 
-        enum GPIOD_EDGE event = tab_parse_event(tmp);
+            /** check if coma exists in between */
+            len = tmp2 - tmp1;
+            coma = memchr((void*)tmp1, 0x2c, len);
 
-        if(event == GPIOD_EDGE_MAX)
-        {
-            syslog(LOG_ERR, "line %d : no known event %s", line_num, tmp);
-            continue;
-        }
+            if(coma != NULL) {
+                tmp2 = coma;
+            }
 
-        fprintf(stderr, "event : %s\n", tmp);
+            len = tmp2 - tmp1;
+            tmp = strncpy(buffer, tmp1, len);
+            tmp[len] = '\0';
+
+            enum GPIOD_HOOKTAB_MOD mod = tab_parse_mod(tmp);
+
+            if(mod == HOOKTAB_MOD_MAX)
+            {
+                syslog(LOG_ERR, "line %d : no known event %s", line_num, tmp);
+                continue;
+            }
+
+            fprintf(stderr, "modifier : %s\n", tmp);
+
+            flags |= (uint16_t)mod;
+
+            /** check if coma is next symbol */
+            {
+                char* tmp3 = eat_space(tmp2);
+                if(*tmp3 == 0x02c)
+                    coma = tmp2 = tmp3;
+            }
+
+            tmp2++;
+        } while(coma != 0);
 
         /** get path */
         tmp1 = eat_space(tmp2);
@@ -148,9 +175,15 @@ int loadTab(int dirfd, struct dirent* dentry)
         /** allocate a hook here */
         struct gpiod_hook* hook = malloc(sizeof(struct gpiod_hook));
         hook->path = strdup(tmp);
+        hook->flags = flags;
+
+        hook->fired = 0;
+        hook->spawned = -1;
+        hook->arg_list_size = 0;
+
         INIT_LIST_HEAD(&(hook->list));
         INIT_LIST_HEAD(&(hook->arg_list));
-        hook->arg_list_size = 0;
+
 
         fprintf(stderr, "path : %s\n", hook->path);
 

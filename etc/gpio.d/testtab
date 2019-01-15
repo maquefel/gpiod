@@ -1,4 +1,8 @@
-WD0     GPIOD_EDGE_RISING      /tmp/test.sh -n --version -v 23 -s test $@ $% $&
-WD1     GPIOD_EDGE_FALLING     /tmp/test.sh $@
-WD2     GPIOD_EDGE_BOTH        /tmp/test.sh $%
-WD3     GPIOD_EDGE_RISING      /tmp/test.sh $&
+WD0     EDGE_RISING         /tmp/test.sh -n --version -v 23 -s test $@ $% $&
+WD1     EDGE_RISING         /tmp/test.sh $@
+WD2     EDGE_BOTH           /tmp/test.sh $%
+WD3     EDGE_RISING         /tmp/test.sh $&
+WD4     EDGE_BOTH,NO_LOOP   /tmp/sleep_test.sh 10
+WD5     EDGE_BOTH,ONESHOT   /tmp/sleep_test.sh 0
+WD6     EDGE_RISING         /tmp/sleep_test.sh 100
+WD7     EDGE_FALLING        /tmp/sleep_test.sh 100

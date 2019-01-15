@@ -32,6 +32,18 @@ int exec_start(const char* exec_file, char *const argv[], char *const envp[])
             close(STDOUT_FILENO);
             close(STDERR_FILENO);
 
+            /** restore original mask */
+            sigset_t mask;
+            if (sigprocmask(0, NULL, &mask) == -1) {
+                errsv = errno;
+                goto fail_close_fork;
+            }
+
+            if (sigprocmask(SIG_UNBLOCK, &mask, NULL) == -1) {
+                errsv = errno;
+                goto fail_close_fork;
+            }
+
             ret = execvpe(exec_file, argv, envp);
             errsv = errno;
             goto fail_close_fork;

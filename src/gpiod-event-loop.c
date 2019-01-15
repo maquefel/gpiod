@@ -6,6 +6,8 @@
 
 #include "list.h"
 
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/time.h>
 #include <sys/ioctl.h>
 #include <sys/signalfd.h>
@@ -77,7 +79,7 @@ int loop()
     int errsv = 0;
     int epoll_events = 0;
 
-    epollfd = epoll_create1(0);
+    epollfd = epoll_create1(EPOLL_CLOEXEC);
 
     /** add to epoll pool each interrupt supporting pin */
     INIT_LIST_HEAD(&i_list);
@@ -199,7 +201,7 @@ int loop()
                 if(changed) {
                     debug_printf_n("pin[%d] value changed : %u", pin->system, pin->value_);
                     ret = dispatch(ts, pin->local, pin->value_);
-                    ret = dispatch_hooks(pin);
+                    ret = dispatch_hooks(pin, event);
                 }
             }
 
@@ -253,7 +255,6 @@ int loop()
                     /** add debounce check */
                     pin = w->pin;
 
-                    /** @todo rework changed interface to primary support uapi */
                     if(!pin->changed(pin, &ts, (int8_t*)&event) && pin->edge == GPIOD_EDGE_BOTH) {
                         syslog(LOG_DEBUG, "spurious interrupt on %s:%d", pin->label, pin->system);
                         continue;
@@ -262,7 +263,7 @@ int loop()
                     syslog(LOG_DEBUG, "PIN event fired %s:%d = %d", pin->label, pin->system, pin->value_);
 
                     ret = dispatch(ts, pin->local, pin->value_);
-                    ret = dispatch_hooks(pin);
+                    ret = dispatch_hooks(pin, event);
                 break;
                 case SIGNAL_FD: {
                     syslog(LOG_DEBUG, "SIGNAL_FD event fired");
@@ -284,7 +285,10 @@ int loop()
                             hup_flag = 1;
                             break;
                         case SIGCHLD:
-                            syslog(LOG_DEBUG, "SIGCHLD signal recieved - shutting down, updating status for child...");
+                            syslog(LOG_INFO, "SIGCHLD signal recieved - child [%d] finished with status %d...", fdsi.ssi_pid, fdsi.ssi_status);
+                            pid_t pid = waitpid(fdsi.ssi_pid, 0, WNOHANG);
+                            if(pid != -1)
+                                hook_clear_spawned(fdsi.ssi_pid);
                             break;
                         default:
                             break;
