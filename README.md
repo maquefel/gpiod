@@ -125,7 +125,7 @@ WD0     EDGE_RISING         /tmp/test.sh -n --version -v 23 -s test $@ $% $&
 ```
 
 Where **LABEL** is pin label defined in config file i.e. **label =**, **MODIFIERS**
-one of **EDGE_RISING**, **EDGE_FALLING**, **EDGE_BOTH ** and (optional) **NO_LOOP**,
+one of **EDGE_RISING**, **EDGE_FALLING**, **EDGE_BOTH** and (optional) **NO_LOOP**,
 **ONESHOT** flags.
 
 **NO_LOOP** prevents launching before previous launch has finished and **ONESHOT**
