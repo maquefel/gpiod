@@ -4,6 +4,7 @@ Daemon to monitor gpio via sysfs or uapi interface and send them over network or
 execute user defined hooks with desired arguments.
 
 [![Build Status](https://semaphoreci.com/api/v1/maquefel/gpiod/branches/master/badge.svg)](https://semaphoreci.com/maquefel/gpiod)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fmaquefel%2Fgpiod.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fmaquefel%2Fgpiod?ref=badge_shield)
 
 ## Requirements
 
@@ -135,3 +136,7 @@ see etc/gpio.d/testtab example.
 
 ## Copyright
 © 2019 Nikita Shubin
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fmaquefel%2Fgpiod.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fmaquefel%2Fgpiod?ref=badge_large)
