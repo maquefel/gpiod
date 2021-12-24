@@ -64,7 +64,6 @@ int init_gpio_chips()
     const struct dirent *ent;
     DIR *dp;
     int dir_fd;
-    int ret = 0;
     int errsv = 0;
 
 #ifdef GPIOD_UAPI
@@ -75,10 +74,10 @@ int init_gpio_chips()
 
     /* List all GPIO devices one at a time */
     dp = opendir(GPIOCHIP_DIR);
-    errsv = errno;
-
-    if (!dp)
+    if (!dp) {
+        errsv = errno;
         goto fail;
+    }
 
     dir_fd = dirfd(dp);
 

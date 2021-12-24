@@ -163,11 +163,6 @@ int dispatch_hooks(struct gpio_pin* pin, int8_t event)
     return 0;
 }
 
-int clear_hooks()
-{
-
-}
-
 int hook_clear_spawned(pid_t pid)
 {
     struct pid_list_t* pid_ = 0;

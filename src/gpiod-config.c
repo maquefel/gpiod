@@ -118,6 +118,7 @@ int loadConfig(const char* fileName) /** bool reload*/
 
     if(ret == 0) {
         syslog(LOG_CRIT, "Error parsing file %s invalid ip address provided: %s", fileName, ip);
+        ret = EINVAL;
         goto parse_fail_free;
     }
 
@@ -175,5 +176,6 @@ int loadConfig(const char* fileName) /** bool reload*/
     parse_fail_free:
     cfg_free(cfg);
     parse_fail:
+    errno = errsv;
     return ret;
 }

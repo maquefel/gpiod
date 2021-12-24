@@ -46,6 +46,6 @@ struct gpiod_hook {
 int loadTabs(const char* /*tabsDir*/);
 
 struct gpio_pin;
-int freeTabs(const struct gpio_pin* /*pin*/);
+void freeTabs(const struct gpio_pin* /*pin*/);
 
 #endif

@@ -73,18 +73,15 @@ int init_gpio_pins()
     return 0;
 }
 
-int cleanup_gpio_pins()
+void cleanup_gpio_pins()
 {
     struct list_head* pos = 0;
     struct gpio_pin* pin = 0;
-    int ret = 0;
 
     list_for_each(pos, &gp_list) {
         pin = list_entry(pos, struct gpio_pin, list);
-        ret = pin->cleanup(pin);
+        pin->cleanup(pin);
     }
-
-    return 0;
 }
 
 int free_gpio_pins()
@@ -123,8 +120,7 @@ void free_gpio_pin(struct gpio_pin* pin)
 struct gpio_pin* find_pin_by_label(const char* label)
 {
     struct list_head* pos = 0;
-    struct gpio_pin* pin = 0;
-    int ret = 0;
+    struct gpio_pin* pin = NULL;
 
     list_for_each(pos, &gp_list) {
         pin = list_entry(pos, struct gpio_pin, list);
@@ -132,7 +128,7 @@ struct gpio_pin* find_pin_by_label(const char* label)
         if(strncmp(label, pin->label, strlen(label)) == 0)
             break;
 
-        pin = 0;
+        pin = NULL;
     }
 
     return pin;

@@ -78,6 +78,7 @@ int init_sysfs()
     }
 
     return 0;
+
     fail:
     errno = errsv;
     return -1;

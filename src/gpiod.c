@@ -28,7 +28,7 @@ static int kill_flag = 0;
 static int hup_flag = 0;
 
 /** signal fd */
-int sigfd;
+static int sigfd;
 
 /** /dev/null fd*/
 int devnullfd;
@@ -221,7 +221,6 @@ int main(int argc, char ** argv)
     }
 
     /** get sigfd */
-    extern int sigfd;
     sigfd = signalfd(-1, &mask, SFD_CLOEXEC);
 
     /** set log level */
@@ -230,24 +229,40 @@ int main(int argc, char ** argv)
     INIT_LIST_HEAD(&(gp_list));
 
     ret = loadConfig(configFile);
-    errsv = errno;
+    if(ret) {
+        errsv = errno;
+        syslog(LOG_ERR, "Could not initialize sysfs (%s).", strerror(errsv));
+        goto unlink_pid;
+    }
 
     ret = loadTabs(crontabDir);
+    if(ret) {
+        errsv = errno;
+        syslog(LOG_ERR, "Failed loading tabs (%s).", strerror(errsv));
+    }
 
     ret = init_gpio_chips();
+    if(ret) {
+        errsv = errno;
+        syslog(LOG_ERR, "Failed initializing gpiochips (%s)", strerror(errsv));
+        goto cleanup;
+    }
 
     ret = init_sysfs();
-
-    if(ret == -1) {
+    if(ret) {
         syslog(LOG_ERR, "Could not initialize sysfs (%s).", strerror(errno));
         goto cleanup;
     }
 
     ret = init_gpio_pins();
+    if(ret) {
+        syslog(LOG_ERR, "Failed to init gpio_pins (%s).", strerror(errno));
+        goto cleanup;
+    }
 
-    ret = loop();
+    ret = loop(sigfd);
 
-    ret = cleanup_gpio_pins();
+    cleanup_gpio_pins();
 
     cleanup:
     free_gpio_pins();
@@ -260,5 +275,5 @@ int main(int argc, char ** argv)
     unlink(pidFile);
 
     quit:
-    return 0;
+    return ret;
 }

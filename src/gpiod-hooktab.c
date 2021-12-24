@@ -51,7 +51,7 @@ enum GPIOD_HOOKTAB_ARGS tab_parse_args(const char* value)
 
 char* eat_space(const char* str)
 {
-    char* tmp = str;
+    char* tmp = (char*)str;
 
     while(*tmp != '\0') {
         if(*tmp == 0x20 || *tmp == 0x09) {
@@ -67,7 +67,7 @@ char* eat_space(const char* str)
 
 char* next_space(const char* str)
 {
-    char* tmp = str;
+    char* tmp = (char*)str;
 
     while(*tmp != '\0') {
         if(*tmp == 0x20 || *tmp == 0x09 || *tmp == 0x0a || *tmp == 0x0d)
@@ -82,18 +82,16 @@ char* next_space(const char* str)
 int loadTab(int dirfd, struct dirent* dentry)
 {
     int errsv = 0;
-    int ret = 0;
 
     /** open file */
     int fd = openat(dirfd, dentry->d_name, O_RDONLY);
-    errsv = errno;
     if(fd == -1) {
+        errsv = errno;
         syslog(LOG_ERR, "Couldn't open file: %s for reading", dentry->d_name);
         goto fail;
     }
 
     FILE* file = fdopen(fd, "r");
-
     char* line = NULL;
     size_t len = 0;
     ssize_t nread;
@@ -188,6 +186,7 @@ int loadTab(int dirfd, struct dirent* dentry)
         fprintf(stderr, "path : %s\n", hook->path);
 
         /** get all args */
+/* TODO: other flags like timestamp */
 //      $$ dollar sign ?
 //      $@ watched input label
 //      $% event flags (textually)
@@ -246,21 +245,20 @@ int loadTab(int dirfd, struct dirent* dentry)
 int loadTabs(const char* tabsDir)
 {
     int errsv = 0;
-    int ret = 0;
     struct dirent* dentry = 0;
     /** for each file in dir */
     int dirfd = open(tabsDir, O_DIRECTORY);
-    errsv = errno;
-
     if(dirfd == -1) {
+        errsv = errno;
         syslog(LOG_CRIT, "Couldn't open tabs directory: %s for reading", tabsDir);
         goto fail;
     }
 
     DIR* dir = fdopendir(dirfd);
-
-    if (dir == 0)
+    if (dir == 0) {
+        errsv = errno;
         goto fail;
+    }
 
     while (1) {
         errno = 0;
@@ -273,8 +271,7 @@ int loadTabs(const char* tabsDir)
         if(dentry == 0)
             break;
 
-        ret = loadTab(dirfd, dentry);
-        errsv = errno;
+        loadTab(dirfd, dentry);
     }
 
     closedir(dir);
@@ -289,7 +286,7 @@ int loadTabs(const char* tabsDir)
     return -1;
 }
 
-int freeHook(const struct gpiod_hook* hook)
+void freeHook(const struct gpiod_hook* hook)
 {
     struct list_head *tmp = 0;
     struct list_head *ag = 0;
@@ -303,11 +300,9 @@ int freeHook(const struct gpiod_hook* hook)
         list_del(&(arg->list));
         free(arg);
     }
-
-    return 0;
 }
 
-int freeTabs(const struct gpio_pin* pin)
+void freeTabs(const struct gpio_pin* pin)
 {
     struct list_head *tmp = 0;
     struct list_head *hk = 0;

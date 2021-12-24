@@ -11,8 +11,6 @@ int exec_start(const char* exec_file, char *const argv[], char *const envp[])
 {
     pid_t pid;
     int errsv = 0;
-    int ret = 0;
-    char *path;
 
     // int access(const char *pathname, int mode);
     if(access(exec_file, X_OK) == -1) {
@@ -44,7 +42,7 @@ int exec_start(const char* exec_file, char *const argv[], char *const envp[])
                 goto fail_close_fork;
             }
 
-            ret = execvpe(exec_file, argv, envp);
+            execvpe(exec_file, argv, envp);
             errsv = errno;
             goto fail_close_fork;
             break;

@@ -19,18 +19,17 @@
 static int shutdown_flag = 0;
 static int hup_flag = 0;
 
-struct list_head p_list; /** poll list */
-struct list_head i_list; /** interrupt list */
+static struct list_head p_list; /** poll list */
+static struct list_head i_list; /** interrupt list */
 
 struct list_head tcp_clients;
 
 /** wrappers */
-struct epoll_wrapper signalfd_w;
-struct epoll_wrapper listenfd_w;
+static struct epoll_wrapper signalfd_w;
+static struct epoll_wrapper listenfd_w;
 
 /** signalfd */
-int sigfd;
-int listenfd;
+static int listenfd;
 
 int add_to_epoll(int epollfd, struct gpio_pin* pin)
 {
@@ -72,7 +71,7 @@ int add_to_epoll(int epollfd, struct gpio_pin* pin)
     return -1;
 }
 
-int loop()
+int loop(int sigfd)
 {
     int ret = 0;
     int epollfd = 0;
@@ -309,7 +308,6 @@ int loop()
         delete_tcp_client(c);
     }
 
-    free_events:
     free(events);
 
     close_socket:

@@ -95,7 +95,7 @@ struct gpio_pin* alloc_sysfs_gpio_pin();
 struct gpio_pin* alloc_uapi_gpio_pin();
 
 int init_gpio_pins();
-int cleanup_gpio_pins();
+void cleanup_gpio_pins();
 int free_gpio_pins();
 
 void free_gpio_pin(struct gpio_pin*);

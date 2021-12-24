@@ -21,7 +21,6 @@ const char* get_value(int fd, const char* name, const char* file)
     if(value_fd == -1)
         goto fail;
 
-
     ret = read(value_fd, &buffer, sizeof(buffer));
     errsv = errno;
 
@@ -48,7 +47,7 @@ struct gpio_chip* sysfs_init_gpio_chip(int fd, const char* name)
     static const char sngpio[] = "ngpio";
     static const char slabel[] = "label";
 
-    struct gpio_chip* chip = 0;
+    struct gpio_chip* chip = NULL;
 
     int ret = 0;
     int errsv = 0;
@@ -61,6 +60,11 @@ struct gpio_chip* sysfs_init_gpio_chip(int fd, const char* name)
     int ngpio = atoi(value);
 
     chip = malloc(sizeof(struct gpio_chip));
+    if (!chip) {
+        errsv = ENOMEM;
+        goto fail;
+    }
+
     chip->base = base;
     chip->ngpio = ngpio;
 
@@ -76,5 +80,5 @@ struct gpio_chip* sysfs_init_gpio_chip(int fd, const char* name)
 
     fail:
     errno = errsv;
-    return 0;
+    return NULL;
 }
