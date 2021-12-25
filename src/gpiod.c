@@ -173,7 +173,7 @@ int main(int argc, char ** argv)
 
     pid_t pid = read_pid_file(pidFile);
 
-    if(pid != 0) {
+    if(pid > 0) {
         ret = kill(pid, 0);
         if(ret == -1) {
             fprintf(stderr, "%s : %s pid file exists, but the process doesn't!\n", PACKAGE_NAME, pidFile);
