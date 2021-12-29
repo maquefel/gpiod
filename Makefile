@@ -96,6 +96,7 @@ sbindir = $(exec_prefix)/sbin
 
 .PHONY: install uninstall
 install: all
+	mkdir -p $(sbindir)
 	install -v -m 0755 gpiod $(sbindir)/gpiod
 	mkdir -p $(DESTDIR)/etc/gpiod
 	install -v -m 0644 etc/gpiod.conf $(DESTDIR)/etc/gpiod/gpiod.conf.example
