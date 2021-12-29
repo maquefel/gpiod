@@ -1,6 +1,7 @@
 #include "gpiod-uapi.h"
 #include "gpiod-pin.h"
 #include "gpiod-chip.h"
+#include "gpiod-server.h"
 
 #include <errno.h>
 #include <unistd.h>
@@ -85,6 +86,8 @@ int uapi_init_pin(struct gpio_pin* pin)
     pin->value_ = uapi_read_value(pin);
     pin->fd = req.fd;
 
+    make_non_blocking(req.fd);
+
     return 0;
 
     fail:
@@ -122,6 +125,7 @@ int8_t uapi_read_value(struct gpio_pin* pin)
     return -1;
 }
 
+/** TODO: split polled and not polled version */
 int8_t uapi_changed_value(struct gpio_pin* pin, struct timespec* time, int8_t* event)
 {
     int ret = 0;
@@ -134,6 +138,9 @@ int8_t uapi_changed_value(struct gpio_pin* pin, struct timespec* time, int8_t* e
     if(pin->edge != GPIOD_EDGE_POLLED) {
         ret = read(upin->fd, &ev, sizeof(ev));
         errsv = errno;
+
+        syslog(LOG_DEBUG, "read returned %d", ret);
+        debug_printf_n("read returned %d", ret);
 
         if(ret == -1)
             goto fail;

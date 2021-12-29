@@ -11,6 +11,7 @@
 #include <sys/time.h>
 #include <sys/ioctl.h>
 #include <sys/signalfd.h>
+#include <sys/timerfd.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <syslog.h>
@@ -19,17 +20,23 @@
 static int shutdown_flag = 0;
 static int hup_flag = 0;
 
-static struct list_head p_list; /** poll list */
-static struct list_head i_list; /** interrupt list */
+static LIST_HEAD(p_list); /** poll list */
+static LIST_HEAD(i_list); /** interrupt list */
+static LIST_HEAD(e_list); /** wrapper list for cleanup */
 
-struct list_head tcp_clients;
+LIST_HEAD(tcp_clients);
 
 /** wrappers */
 static struct epoll_wrapper signalfd_w;
 static struct epoll_wrapper listenfd_w;
+static struct epoll_wrapper timerfd_w;
 
 /** signalfd */
 static int listenfd;
+
+/** timerfd */
+static int timerfd;
+int poll_period = 50;
 
 int add_to_epoll(int epollfd, struct gpio_pin* pin)
 {
@@ -39,11 +46,11 @@ int add_to_epoll(int epollfd, struct gpio_pin* pin)
 
     switch(pin->facility) {
         case GPIOD_FACILITY_SYSFS:
-            ew->event.events = EPOLLPRI | EPOLLERR | EPOLLET;
+            ew->event.events = EPOLLPRI | EPOLLERR;
             ew->type = SYSFS_PIN;
             break;
         case GPIOD_FACILITY_UAPI:
-            ew->event.events = EPOLLIN | EPOLLET;
+            ew->event.events = EPOLLIN;
             ew->type = UAPI_PIN;
             break;
         default:
@@ -63,6 +70,8 @@ int add_to_epoll(int epollfd, struct gpio_pin* pin)
         goto free_ew;
     }
 
+    list_add_tail(&(ew->list), &(e_list));
+
     return 0;
 
     free_ew:
@@ -79,15 +88,6 @@ int loop(int sigfd)
     int epoll_events = 0;
 
     epollfd = epoll_create1(EPOLL_CLOEXEC);
-
-    /** add to epoll pool each interrupt supporting pin */
-    INIT_LIST_HEAD(&i_list);
-
-    /** add to poll pool each not supporting interrupt pin */
-    INIT_LIST_HEAD(&p_list);
-
-    /** init tcp clients list */
-    INIT_LIST_HEAD(&tcp_clients);
 
     struct list_head* pos = 0;
     struct list_head* tmp = 0;
@@ -168,6 +168,47 @@ int loop(int sigfd)
 
     epoll_events++;
 
+    /** setup timerfd for polled gpios */
+    /** @note we can specify dirrent polling periods for different pins */
+    //  struct timespec {
+    //      time_t tv_sec;                /* Seconds */
+    //      long   tv_nsec;               /* Nanoseconds */
+    //  };
+    //
+    //  struct itimerspec {
+    //      struct timespec it_interval;  /* Interval for periodic timer */
+    //      struct timespec it_value;     /* Initial expiration */
+    //  };
+    timerfd = timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC | TFD_NONBLOCK);
+    if(timerfd == -1) {
+        syslog(LOG_CRIT, "timerfd_settime failed with [%d] : %s", errsv, strerror(errsv));
+        goto close_socket;
+    }
+
+    struct itimerspec ts = {
+        {0, poll_period * 1000000UL},
+        {0, poll_period * 1000000UL}
+    };
+
+    ret = timerfd_settime(timerfd, 0, &ts, 0);
+    if(ret == -1) {
+        syslog(LOG_CRIT, "timerfd_settime failed with [%d] : %s", errsv, strerror(errsv));
+        goto close_timerfd;
+    }
+
+    timerfd_w.fd = timerfd;
+    timerfd_w.type = TIMER_FD;
+    timerfd_w.event.events = EPOLLIN;
+    timerfd_w.event.data.ptr = &timerfd_w;
+
+    if (epoll_ctl(epollfd, EPOLL_CTL_ADD, timerfd_w.fd, &timerfd_w.event) == -1) {
+        errsv = errno;
+        syslog(LOG_CRIT, "epoll_ctl : adding timerfd failed with [%d] : %s", errsv, strerror(errsv));
+        goto close_socket;
+    }
+
+    epoll_events++;
+
     /** add interupt pins */
     list_for_each(pos, &i_list) {
         pin = list_entry(pos, struct gpio_pin, list);
@@ -177,11 +218,9 @@ int loop(int sigfd)
             epoll_events++;
     }
 
-
     struct epoll_event* events = malloc(sizeof(struct epoll_event)*epoll_events);
 
     while(!shutdown_flag) {
-        int timeout = 50; // [msec]
         struct timeval t1 = {0}; // [sec], [us]
         struct timeval t2 = {0};
         struct timespec ts = {0};
@@ -189,24 +228,7 @@ int loop(int sigfd)
         enum GPIOD_EDGE event = GPIOD_EDGE_MAX;
 
         gettimeofday(&t1, NULL);
-        int nfds = epoll_wait(epollfd, events, epoll_events, timeout); // timeout in milliseconds
-        errsv = errno;
-
-        /** poll changes */
-        if (nfds == 0) {
-            list_for_each(pos, &p_list) {
-                pin = list_entry(pos, struct gpio_pin, list);
-                int8_t changed = pin->changed(pin, &ts, (int8_t*)&event);
-                if(changed) {
-                    debug_printf_n("pin[%d] value changed : %u", pin->system, pin->value_);
-                    ret = dispatch(ts, pin->local, pin->value_);
-                    ret = dispatch_hooks(pin, event);
-                }
-            }
-
-            continue;
-        }
-
+        int nfds = epoll_wait(epollfd, events, epoll_events, -1);
         gettimeofday(&t2, NULL);
 
         struct epoll_wrapper* w = 0;
@@ -251,9 +273,8 @@ int loop(int sigfd)
                 } break;
                 case SYSFS_PIN:
                 case UAPI_PIN:
-                    /** add debounce check */
+                    /** TODO: add debounce check */
                     pin = w->pin;
-
                     if(!pin->changed(pin, &ts, (int8_t*)&event) && pin->edge == GPIOD_EDGE_BOTH) {
                         syslog(LOG_DEBUG, "spurious interrupt on %s:%d", pin->label, pin->system);
                         continue;
@@ -264,6 +285,21 @@ int loop(int sigfd)
                     ret = dispatch(ts, pin->local, pin->value_);
                     ret = dispatch_hooks(pin, event);
                 break;
+                case TIMER_FD: {
+                    /** readout the timer */
+                    uint64_t exp;
+                    while(read(timerfd, &exp, sizeof(uint64_t)) > 0)
+                        ;
+                    list_for_each(pos, &p_list) {
+                        pin = list_entry(pos, struct gpio_pin, list);
+                        int8_t changed = pin->changed(pin, &ts, (int8_t*)&event);
+                        if(changed) {
+                            debug_printf_n("pin[%d] value changed : %u", pin->system, pin->value_);
+                            ret = dispatch(ts, pin->local, pin->value_);
+                            ret = dispatch_hooks(pin, event);
+                        }
+                    }
+                } break;
                 case SIGNAL_FD: {
                     syslog(LOG_DEBUG, "SIGNAL_FD event fired");
                     struct signalfd_siginfo fdsi = {0};
@@ -301,14 +337,23 @@ int loop(int sigfd)
 
     /** disconnect clients */
     struct tcp_client* c = 0;
-
     // list_move_tail
     list_for_each_safe(pos, tmp, &tcp_clients) {
         c = list_entry(pos, struct tcp_client, list);
         delete_tcp_client(c);
     }
 
+    /** free wrappers */
+    struct epoll_wrapper* w = 0;
+    list_for_each_safe(pos, tmp, &e_list) {
+        w = list_entry(pos, struct epoll_wrapper, list);
+        free(w);
+    }
+
     free(events);
+
+    close_timerfd:
+    close(timerfd);
 
     close_socket:
     close(listenfd);

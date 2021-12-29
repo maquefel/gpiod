@@ -92,7 +92,6 @@ int free_gpio_pins()
 
     list_for_each_safe(pos, tmp, &gp_list) {
         pin = list_entry(pos, struct gpio_pin, list);
-        freeTabs(pin);
         free_gpio_pin(pin);
     }
 
@@ -101,6 +100,8 @@ int free_gpio_pins()
 
 void free_gpio_pin(struct gpio_pin* pin)
 {
+    freeTabs(pin);
+
     switch(pin->facility) {
         case GPIOD_FACILITY_SYSFS: {
             struct gpio_pin_sysfs* gp = to_pin_sysfs(pin);

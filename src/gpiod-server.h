@@ -26,6 +26,7 @@ enum loop_type {
     CLIENT_PORT,        ///< port for incoming data from logged in tcp clients
     REMOTE_PORT,        ///< port for data from outgoing connections
     SIGNAL_FD,          ///< signals watch file descriptor
+    TIMER_FD,           ///< timer file descriptor
     LOOP_TYPE_MAX
 };
 

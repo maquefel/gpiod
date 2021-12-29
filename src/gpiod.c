@@ -153,6 +153,7 @@ int main(int argc, char ** argv)
                 break;
             case 'p' :
                 pidFile = optarg;
+                printf("Using pid file: %s\n", pidFile);
                 break;
             case 'c':
                 configFile = optarg;
@@ -201,9 +202,14 @@ int main(int argc, char ** argv)
 
     if(daemon_flag) {
         daemonize("/", 0);
-        pid = create_pid_file(pidFile);
     } else
         openlog(PACKAGE_NAME, LOG_PERROR, LOG_DAEMON);
+
+    pid = create_pid_file(pidFile);
+    if(pid == -1)
+    {
+        syslog(LOG_ERR, "Failed creating pid file %s (%s).", pidFile, strerror(errsv));
+    }
 
     /** setup signals */
     sigset_t mask;
@@ -231,7 +237,7 @@ int main(int argc, char ** argv)
     ret = loadConfig(configFile);
     if(ret) {
         errsv = errno;
-        syslog(LOG_ERR, "Could not initialize sysfs (%s).", strerror(errsv));
+        syslog(LOG_ERR, "Could not initialize loadConfig (%s).", strerror(errsv));
         goto unlink_pid;
     }
 

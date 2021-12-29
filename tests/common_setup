@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+GPIOD=../gpiod
+GPIOD_IP=127.0.0.1
+GPIOD_PORT=1500
+GPIOD_CONFIG=/tmp/gpiod.conf.uapi
+GPIOD_HOOK=../etc/gpio.d/testtab
+GPIOD_ARGS=/tmp/gpiod_test_args
+GPIOD_PID=/var/run/gpiod.pid
+
+wait_for_file() {
+    cnt=$(($2 - 1))
+    while ! test -f "$1"; do
+        [ $cnt -eq 0 ] && return 1
+        cnt="$(($cnt - 1))"
+        sleep 0.1
+    done
+
+    return 0
+}
+
+_common_setup() {   
+    sudo /sbin/modprobe gpio-mockup gpio_mockup_ranges=-1,8
+    gpiochip_name=$(cat /sys/kernel/debug/gpio | grep gpio-mockup-A | awk -F: '{ print $1 }')
+    export gpiochip_name
+    export MOCKUP_PATH=/sys/kernel/debug/gpio-mockup/${gpiochip_name}
+    sed "s/gpiochip0/${gpiochip_name}/g" ../etc/gpiod.conf.uapi > ${GPIOD_CONFIG}
+    for i in ${MOCKUP_PATH}/*; do echo 0 > $i; done
+    coproc { ${GPIOD} -n -c $(realpath ${GPIOD_CONFIG}) -d $(realpath $(dirname ${GPIOD_HOOK})) -p ${GPIOD_PID}; } 
+    export SAVED_PID=$gpiod_PID
+    rm -rf ${GPIOD_ARGS}
+    cp test.sh /tmp/test.sh
+    cp sleep_test.sh /tmp/sleep_test.sh
+    sleep 1
+}
+
+_common_teardown() {
+    ${GPIOD} -p ${GPIOD_PID} -k
+    wait $SAVED_PID || true
+    run /sbin/rmmod gpio-mockup
+    rm /tmp/test.sh
+    rm /tmp/sleep_test.sh
+}

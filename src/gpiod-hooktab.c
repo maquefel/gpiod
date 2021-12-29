@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 #include "gpiod-pin.h"
+#include "gpiod.h"
 
 const char* gpiod_hook_modifies[] = {
     "EDGE_RISING",
@@ -121,8 +122,6 @@ int loadTab(int dirfd, struct dirent* dentry)
             continue;
         }
 
-        fprintf(stderr, "label : %s\n", tmp);
-
         /** get modifiers */
         char* coma = 0;
         do {
@@ -149,7 +148,7 @@ int loadTab(int dirfd, struct dirent* dentry)
                 continue;
             }
 
-            fprintf(stderr, "modifier : %s\n", tmp);
+            debug_printf_n("modifier : %s", tmp);
 
             flags |= (uint16_t)mod;
 
@@ -183,7 +182,7 @@ int loadTab(int dirfd, struct dirent* dentry)
         INIT_LIST_HEAD(&(hook->arg_list));
 
 
-        fprintf(stderr, "path : %s\n", hook->path);
+        debug_printf_n("path : %s", hook->path);
 
         /** get all args */
 /* TODO: other flags like timestamp */
@@ -198,7 +197,7 @@ int loadTab(int dirfd, struct dirent* dentry)
             len = tmp2 - tmp1;
             tmp = strncpy(buffer, tmp1, len);
             tmp[len] = '\0';
-            fprintf(stderr, "arg[%d] : %s\n", i++, tmp);
+            debug_printf_n("arg[%d] : %s", i++, tmp);
 
             struct gpiod_hook_args* arg = malloc(sizeof(struct gpiod_hook_args));
             arg->arg = HOOKTAB_ARG_MAX;

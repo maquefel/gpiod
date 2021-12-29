@@ -12,13 +12,27 @@ VERSION = -DVERSION_MAJOR=$(MAJOR) -DVERSION_MINOR=$(MINOR) -DVERSION_PATCH=$(PA
 INCLUDE += -Isrc/
 
 .PHONY: all
-
 all: gpiod
 
 .PHONY: debug
-
 debug: CFLAGS += -O0 -DDEBUG -g -Wno-unused-variable
 debug: all
+
+.PHONY: gcov
+gcov: CFLAGS+= -fprofile-arcs -ftest-coverage -DGCOV=1 -DGCOV_PREFIX="${CURDIR}"
+gcov: debug
+
+.PHONY: asan
+asan: CFLAGS+= -fsanitize=address -fsanitize=leak
+asan: gcov
+
+.PHONY: error-check
+error-check: CFLAGS+=-Werror -O
+error-check: all
+
+.PHONY: tests
+tests: asan
+	make -C tests
 
 UAPI_OBJECTS=
 
@@ -92,3 +106,21 @@ uninstall:
 
 clean:
 	-rm gpiod *.o
+	-rm *.gcda
+	-rm *.gcno
+
+# --- report
+
+html:
+	mkdir -p $@
+
+.PHONY: report
+
+report: html asan tests
+	lcov -t "gpiod" -o gpiod.info -c -d .
+	lcov --remove gpiod.info \
+	'*cmdline.*' \
+	'*daemonize*' \
+	'*tests/*' \
+	-o gpiod.info
+	genhtml -o html gpiod.info

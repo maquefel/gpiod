@@ -14,6 +14,7 @@
 
 #include "gpiod-pin.h"
 #include "gpiod-server.h"
+#include "gpiod-event-loop.h"
 
 int conf_parse_facility(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
 {
@@ -72,7 +73,7 @@ int conf_validate_positive(cfg_t *cfg, cfg_opt_t *opt)
 cfg_opt_t opts[] = {
     CFG_STR("listen", 0, CFGF_NONE),
     CFG_INT("port", 0, CFGF_NONE),
-    CFG_INT("poll", 0, CFGF_NONE),
+    CFG_INT("poll", 50, CFGF_NONE),
     CFG_INT_CB("facility", GPIOD_FACILITY_SYSFS, CFGF_NONE, conf_parse_facility),
     CFG_SEC("gpio", gpio_pin_opts, CFGF_MULTI),
     CFG_END()
@@ -112,6 +113,7 @@ int loadConfig(const char* fileName) /** bool reload*/
 
     port = cfg_getint(cfg, "port");
     ip = cfg_getstr(cfg, "listen");
+    poll_period = cfg_getint(cfg, "poll");
 
     ret = inet_pton(PF_INET, ip, &addr);
     errsv = errno;
@@ -172,6 +174,8 @@ int loadConfig(const char* fileName) /** bool reload*/
 
         list_add_tail(&(pin->list), &(gp_list));
     }
+
+    ret = 0;
 
     parse_fail_free:
     cfg_free(cfg);

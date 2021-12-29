@@ -1,35 +1,12 @@
 #!/usr/bin/env bats
 
-GPIOD=../gpiod
-GPIOD_IP=127.0.0.1
-GPIOD_PORT=1500
-GPIOD_CONFIG=../etc/gpiod.conf.uapi
-GPIOD_HOOK=../etc/gpio.d/testtab
-GPIOD_ARGS=/tmp/gpiod_test_args
-GPIOD_PID=/var/run/gpiod.pid
-
-wait_for_file() {
-    cnt=$(($2 - 1))
-    while ! test -f "$1"; do
-        [ $cnt -eq 0 ] && return 1
-        cnt="$(($cnt - 1))"
-        sleep 0.1
-    done
-
-    return 0
-}
-
 setup() {
-    run /sbin/modprobe gpio-mockup gpio_mockup_ranges=32,64
-    for i in /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/*; do echo 0 > $i; done
-    $GPIOD -c $(realpath ${GPIOD_CONFIG}) -d $(realpath $(dirname ${GPIOD_HOOK})) -p ${GPIOD_PID}  -l7
-    rm -rf ${GPIOD_ARGS}
-    cp test.sh /tmp/test.sh
-    cp sleep_test.sh /tmp/sleep_test.sh
+    load 'common_setup'
+    _common_setup
 }
 
 @test "hook test args count" {
-    echo 1 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/0
+    echo 1 > ${MOCKUP_PATH}/0
     wait_for_file ${GPIOD_ARGS} 3
     [ $? -eq 0 ]
     tab_arg_count=$(sed -n 1p ${GPIOD_HOOK} | sed 's/  */ /g' | cut -s -d' ' -f 3- | wc -w)
@@ -40,7 +17,7 @@ setup() {
 }
 
 @test "hook test passing label arg" {
-    echo 1 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/1
+    echo 1 > ${MOCKUP_PATH}/1
     wait_for_file ${GPIOD_ARGS} 3
     [ $? -eq 0 ]
     tab_label=$(sed -n 2p ${GPIOD_HOOK} | awk '{ print $1 }')
@@ -51,8 +28,8 @@ setup() {
 }
 
 @test "hook test passing event arg" {
-    echo 1 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/2
-    echo 0 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/2 # falling edge config trigger
+    echo 1 > ${MOCKUP_PATH}/2
+    echo 0 > ${MOCKUP_PATH}/2 # falling edge config trigger
     wait_for_file ${GPIOD_ARGS} 3
     [ $? -eq 0 ]
     tab_event="FALL"
@@ -63,7 +40,7 @@ setup() {
 }
 
 @test "hook test passing event numerical arg" {
-    echo 1 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/3
+    echo 1 > ${MOCKUP_PATH}/3
     wait_for_file ${GPIOD_ARGS} 3
     [ $? -eq 0 ]
     tab_num_event="1"
@@ -75,23 +52,23 @@ setup() {
 
 @test "hook test rising event" {
     pid=$(<${GPIOD_PID})
-    echo 1 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/6
+    echo 1 > ${MOCKUP_PATH}/6
     child=$(ps -o pid= --ppid ${pid})
     cnt=$(echo ${child} | wc -w)
     [ "$cnt" != "0" ]
     run kill ${child}
-    echo 0 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/6
+    echo 0 > ${MOCKUP_PATH}/6
     run ps -o pid= --ppid ${pid}
     [ "$output" == "" ]
 }
 
 @test "hook test falling event" {
     pid=$(<${GPIOD_PID})
-    echo 1 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/7
+    echo 1 > ${MOCKUP_PATH}/7
     run ps -o pid= --ppid ${pid}
     echo $output
     [ "$output" == "" ]
-    echo 0 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/7
+    echo 0 > ${MOCKUP_PATH}/7
     child=$(ps -o pid= --ppid ${pid})
     cnt=$(echo ${child} | wc -w)
     [ "$cnt" != "0" ]
@@ -100,12 +77,12 @@ setup() {
 
 @test "hook test both event" {
     pid=$(<${GPIOD_PID})
-    echo 1 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/4
+    echo 1 > ${MOCKUP_PATH}/4
     child=$(ps -o pid= --ppid ${pid})
     cnt=$(echo ${child} | wc -w)
     [ "$cnt" != "0" ]
     run kill ${child}
-    echo 0 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/4
+    echo 0 > ${MOCKUP_PATH}/4
     child=$(ps -o pid= --ppid ${pid})
     cnt=$(echo ${child} | wc -w)
     [ "$cnt" != "0" ]
@@ -114,13 +91,13 @@ setup() {
 
 @test "hook test spurios launch prevention" {
     pid=$(<${GPIOD_PID})
-    echo 1 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/4
+    echo 1 > ${MOCKUP_PATH}/4
     child=$(ps -o pid= --ppid ${pid})
     cnt=$(echo ${child} | wc -w)
     echo $cnt
     [ "$cnt" == "1" ]
-    echo 0 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/4
-    echo 1 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/4
+    echo 0 > ${MOCKUP_PATH}/4
+    echo 1 > ${MOCKUP_PATH}/4
     child=$(ps -o pid= --ppid ${pid})
     cnt=$(echo ${child} | wc -w)
     echo $cnt
@@ -130,12 +107,12 @@ setup() {
 
 @test "hook test spawning multiply children" {
     pid=$(<${GPIOD_PID})
-    echo 0 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/6
-    echo 1 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/6
-    echo 0 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/6
-    echo 1 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/6
-    echo 0 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/6
-    echo 1 > /sys/kernel/debug/gpio-mockup-event/gpio-mockup-A/6
+    echo 0 > ${MOCKUP_PATH}/6
+    echo 1 > ${MOCKUP_PATH}/6
+    echo 0 > ${MOCKUP_PATH}/6
+    echo 1 > ${MOCKUP_PATH}/6
+    echo 0 > ${MOCKUP_PATH}/6
+    echo 1 > ${MOCKUP_PATH}/6
     child=$(ps -o pid= --ppid ${pid})
     cnt=$(echo ${child} | wc -w)
     echo $cnt
@@ -147,8 +124,6 @@ setup() {
 }
 
 teardown() {
-    killall gpiod
-    run /sbin/rmmod gpio-mockup
-    rm /tmp/test.sh
-    rm /tmp/sleep_test.sh
+    load 'common_setup'
+    _common_teardown
 }

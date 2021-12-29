@@ -69,7 +69,7 @@ int init_socket(uint32_t ipaddr, int portno)
     if (bind(sockfd, (struct sockaddr *) &addr, sizeof(addr)) < 0)
     {
         errsv = errno;
-        syslog(LOG_CRIT, "ERROR on binding %s:%d", inet_ntoa(addr.sin_addr), portno);
+        syslog(LOG_CRIT, "ERROR on binding %s:%d : %s", inet_ntoa(addr.sin_addr), portno, strerror(errsv));
         goto fail;
     }
 

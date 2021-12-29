@@ -16,9 +16,9 @@
 
 static const char* sysfs = "/sys/class/gpio/";
 
-static int sfd_; // /sys/class/gpio
-static int efd_; // /sys/class/gpio/export
-static int ufd_; // /sys/class/gpio/unexport
+static int sfd_ = -1; // /sys/class/gpio
+static int efd_= - 1; // /sys/class/gpio/export
+static int ufd_ = -1; // /sys/class/gpio/unexport
 
 static DIR* dir;
 
@@ -240,7 +240,7 @@ int init_sysfs_pin(struct gpio_pin* pin)
         sprintf(buffer, "gpio%d", pin->system);
     }
 
-    gpio_dir = openat(sfd_, buffer, O_RDONLY | __O_DIRECTORY | O_CLOEXEC);
+    gpio_dir = openat(sfd_, buffer, O_RDONLY | O_CLOEXEC);
     errsv = errno;
 
     if(gpio_dir == -1) {
